@@ -1,0 +1,6 @@
+# Environment
+*.env
+
+#Data
+*.csv
+backtest/*.json

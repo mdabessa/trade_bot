@@ -24,15 +24,14 @@ class Model(Base):
     def __init__(self, **data) -> None:
         super().__init__(**data)
         
-        if session:
-            session.add(self)
-            session.commit()
+        session.add(self)
+        self.update()
+
 
 
     def delete(self):
-        self.super().delete()
-        session.commit()
-
+        session.delete(self)
+        self.update()
 
     def update(self):
         session.commit()
@@ -75,38 +74,64 @@ class Header(Model):
         self.update()
 
 
-    @classmethod    
-    def get(cls, key:str):
-        r = cls.select_one(cls.key == key)
-        value = eval(r.type_+f'({r.value})')
+    def evaluate(self):
+        value = eval(self.type_+f'("{self.value}")')
         return value
+    
+    
+    def __bool__(self) -> bool:
+        return bool(self.evaluate())
+
+
+    @classmethod
+    def get(cls, key: str):
+        return cls.select_one(cls.key == key)
+
+
+    @classmethod
+    def get_create(cls, key: str, value: str, type_: str):
+        header = cls.get(key)
+        if header == None:
+            header = Header(key=str(key), value=str(value), type_=str(type_))
+        
+        return header
+
+    @classmethod
+    def create_update(cls, key: str, value: str, type_: str):
+        header = cls.get(key)
+        if header == None:
+            header = Header(key=str(key), value=str(value), type_=str(type_))
+        else:
+            header.set(value)    
+
+        return header
 
 
 class Coin(Model):
     __tablename__ = 'coins'
 
     symbol = Column(String, unique=True, nullable=False)
+    price = Column(Float, default=0.0, nullable=False)
     historic = Column(ARRAY(Float), default=[])
+    keep_historic = Column(Integer, default=50, nullable=False)
+    lot_size = Column(String, default='0.001', nullable=False)
     trades = relationship('Trade', back_populates='coin')
-    wallet = relationship('Wallet', back_populates='coin')
-
-    def __init__(self, symbol: str, price: float, keep_historic: int, lot_size: str) -> None:
-        super().__init__(symbol=symbol)
-
-        self.keep_historic = keep_historic 
-        self.lot_size = lot_size
-
-        self.set_price(price)
+    balance = relationship('Balance', back_populates='coin', uselist=False)
 
 
     def set_price(self, price: float) -> None:
         self.price = price
-        self.addHistoric(price)
         self.update()
+        self.add_historic(price)
 
 
     def add_historic(self, price: float) -> None:
-        self.historic.append(price)
+        historic = self.historic.copy()
+        historic.append(price)
+        while len(historic) > self.keep_historic:
+            historic.pop(0)
+
+        self.historic = historic.copy() 
         self.update()
 
     
@@ -131,6 +156,16 @@ class Coin(Model):
     @classmethod
     def get(cls, symbol: str):
         return cls.select_one(cls.symbol == symbol)
+    
+
+    @classmethod
+    def get_create(cls, symbol: str, price: float, keep_historic: int, lot_size: str): 
+        coin = cls.get(symbol)
+        if not coin:
+            coin = Coin(symbol=symbol, price=price, keep_historic=keep_historic, lot_size=lot_size)
+        
+        return coin
+
 
 
 class Trade(Model):
@@ -142,17 +177,19 @@ class Trade(Model):
     coin = relationship('Coin', back_populates='trades')
 
 
-class Wallet(Model):
-    __tablename__ = 'wallet'
+    @classmethod
+    def get(cls, coin: Coin):
+        return cls.select_one(cls.coin == coin)
+
+
+
+class Balance(Model):
+    __tablename__ = 'balance'
 
     quantity = Column(Float, nullable=False, default=0.0)
+    fee = Column(Float, nullable=False, default=0.0)
     coin_id = Column(Integer, ForeignKey('coins.id'), unique=True, nullable=False)
-    coin = relationship('Coin', back_populates='wallet')
-
-    def __init__(self, coin: Coin, quantity: float = 0.0, fee: float = 0.1) -> None:
-        super().__init__(coin, quantity)
-        
-        self.fee = fee
+    coin = relationship('Coin', back_populates='balance')
 
 
     def set(self, quantity: float) -> None:
@@ -162,29 +199,43 @@ class Wallet(Model):
     
     @classmethod
     def buy(cls, coin: Coin, quantity: float = None) -> None:
-        usdt = cls.select_one(cls.coin.symbol == 'USDT')
+        usdt = Coin.get('USDT').balance
         if usdt.quantity <= 12:
             raise Exception('Insufficient money!')
         
         if quantity == None:
             quantity = usdt.quantity/coin.price
         
-        wallet_coin = coin.wallet
+        balance_coin = coin.balance
 
-        wallet_coin.set(wallet_coin.quantity + (quantity * (1 - wallet_coin.fee/100)))
+        balance_coin.set(balance_coin.quantity + (quantity * (1 - balance_coin.fee/100)))
         usdt.set(usdt.quantity - (quantity * coin.price))
     
 
     @classmethod
     def sell(cls, coin: Coin, quantity: float = None) -> None:
-        usdt = cls.select_one(cls.coin.symbol == 'USDT')
+        usdt = Coin.get('USDT').balance
 
-        wallet_coin = coin.wallet
+        balance_coin = coin.balance
         if quantity == None:
-            quantity = wallet_coin.quantity
+            quantity = balance_coin.quantity
 
         usdt.set(usdt.quantity + (quantity * coin.price) * (1 - usdt.fee/100))
-        wallet_coin.set(wallet_coin.quantity - quantity)
+        balance_coin.set(balance_coin.quantity - quantity)
+
+
+    @classmethod
+    def get(cls, coin: Coin):
+        return cls.select_one(cls.coin == coin)
+
+
+    @classmethod
+    def get_create(cls, coin: Coin, quantity: float = 0.0, fee: float = 0.1):
+        balance = cls.get(coin)
+        if not balance:
+            balance = Balance(coin=coin, quantity=quantity, fee=fee)
+
+        return balance
 
 
     @classmethod
