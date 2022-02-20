@@ -1,5 +1,6 @@
 from time import time
 
+
 class TimeCount:
     def __init__(self):
         self.started = time()
@@ -12,6 +13,15 @@ class TimeCount:
 
     def total(self) -> float:
         return time() - self.started
+
+
+class IdGenerator:
+    def __init__(self, start=0) -> None:
+        self.num = start
+    
+    def __call__(self) -> int:
+        self.num += 1
+        return self.num
 
 
 def nround(num: float, n: int = 3) -> float:

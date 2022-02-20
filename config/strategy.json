@@ -1,0 +1,12 @@
+{
+    "default":{
+        "below_average": 0.07,
+        "trend_up": 0.01,
+        "trend_time": 1440,
+        "profit": 0.02,
+        "max_days": 3,
+        "max_money": 0,
+        "btc_max_diff": 0.94,
+        "btc_trend_days": 4
+    }
+}

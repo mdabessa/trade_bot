@@ -1,6 +1,11 @@
 # Environment
 *.env
 
-#Data
+# Data
 *.csv
 backtest/*.json
+logs/log.txt
+
+# Python
+*.pyc
+*.pyo

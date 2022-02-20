@@ -14,6 +14,11 @@ class Logger:
                     os.makedirs(directory)
                 except:
                     pass
+        
+        try:
+            os.remove(self.fname)
+        except:
+            pass
 
     def __call__(self, info: str) -> None:
         info = str(info)
