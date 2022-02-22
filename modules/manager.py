@@ -2,7 +2,7 @@ import datetime as dt
 import json
 import sqlite3 as sql
 
-from .utils import TimeCount, nround
+from .utils import TimeCount, nround, IdGenerator
 from .logger import Logger
 from .models import Coin, Header, Balance, Trade
 
@@ -39,23 +39,25 @@ class ManagerBacktest(Manager):
 
 
     def buy(self, coin: Coin, quantity: float = -1) -> bool:
-        usdt_balance = Coin.get('USDT').balance
+        usdt_balance = Balance.get(Coin.get('USDT'))
         if quantity <= 0:
             quantity = usdt_balance.quantity/coin.price
         
         quantity = float(coin.quantity_lot_size(quantity))
-        Balance.buy(coin, quantity)       
-        self.logger(f'{quantity} {coin.symbol} bought at {coin.price}!\n- {quantity * coin.price} USDT\nFee: {quantity*(coin.balance.fee/100)} {coin.symbol}')
+        Balance.buy(coin, quantity)
+        balance = Balance.get(coin)
+        self.logger(f'{quantity} {coin.symbol} bought at {coin.price}!\n- {quantity * coin.price} USDT\nFee: {quantity*(balance.fee/100)} {coin.symbol}')
         return True
         
 
     def sell(self, coin: Coin, quantity: float = -1) -> bool:
+        balance = Balance.get(coin)
         if quantity <= 0:
-            quantity = coin.balance.quantity
+            quantity = balance.quantity
 
         quantity = float(coin.quantity_lot_size(quantity))
         Balance.sell(coin, quantity)
-        self.logger(f'{quantity} {coin.symbol} sold at {coin.price}!\n+ {quantity * coin.price} USDT\nFee: {(quantity*coin.price)*(coin.balance.fee/100)} USDT')
+        self.logger(f'{quantity} {coin.symbol} sold at {coin.price}!\n+ {quantity * coin.price} USDT\nFee: {(quantity*coin.price)*(balance.fee/100)} USDT')
         return True
 
 
@@ -73,6 +75,10 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         self.database_historic = sql.connect(database_historic)
         self.simulation_time = TimeCount()
         self.date = ''
+
+
+        id_marc = Header.get_create('id_marc', '0', 'int')
+        self.gen_id = IdGenerator(id_marc.evaluate())
 
         activity = Header.get('activity')
         if activity == None:
@@ -100,8 +106,9 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         r = super().buy(coin, quantity)
         if r:
             epoch = Header.get('epoch').evaluate()
-
-            trade = Trade(price=coin.price, age=epoch, coin=coin)
+            id_marc = Header.get('id_marc')
+            trade = Trade(coin_symbol=coin.symbol, price=coin.price, age=epoch, id=id_marc.evaluate())
+            id_marc.set(id_marc.evaluate()+1)
 
             order = {
                 'id': trade.id,
@@ -143,7 +150,8 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         self.date += dt.timedelta(minutes=1)
         if self.date >= self.end_date:
             for trade in Trade.select_all():
-                self.sell(trade.coin)
+                coin = Coin.get(trade.coin_symbol)
+                self.sell(coin)
             
             self.summary['final_wallet'] = Balance.to_dict()
             self.save_summary()
@@ -176,9 +184,9 @@ class ManagerHistoricalBacktest(ManagerBacktest):
 
 
     def estimate_balance(self) -> float:
-        value = Coin.get('USDT').balance.quantity
+        value = 0
         for coin in Coin.select_all():
-            value += coin.price * coin.balance.quantity
+            value += coin.price * Balance.get(coin).quantity
 
         return value
 

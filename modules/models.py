@@ -7,9 +7,14 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from .config import DATABASE_URL
 
 
-engine = create_engine(DATABASE_URL, echo=False)
-Session = sessionmaker(bind=engine)
-session = Session()
+if DATABASE_URL:
+    engine = create_engine(DATABASE_URL, echo=False)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+else:
+    session = None
+    cache = {}
 
 
 Base = declarative_base()
@@ -17,8 +22,6 @@ Base = declarative_base()
 
 class Model(Base):
     __abstract__  = True
-
-    id = Column(Integer, primary_key=True)
 
 
     def __init__(self, **data) -> None:
@@ -38,33 +41,42 @@ class Model(Base):
 
 
     @classmethod
-    def select(cls, expression):
+    def select(cls, expression, key: str, value: str) -> list:
         if session:
             return session.query(cls).filter(expression).all()
+
         else:
-            return []
+            objs = list(filter(lambda x: getattr(x, key) == value, cache[cls.__name__]))
+            return objs
 
 
     @classmethod
-    def select_one(cls, expression):
+    def select_one(cls, expression, key: str, value):
         if session:
             return session.query(cls).filter(expression).first()
-        else:
-            return None
 
+        else:
+            try:
+                obj = list(filter(lambda x: getattr(x, key) == value, cache[cls.__name__]))[0]
+                return obj
+            except:
+                return None
+    
 
     @classmethod
-    def select_all(cls):
+    def select_all(cls) -> list:
         if session:
             return session.query(cls).all()
         else:
-            return []
+            return cache[cls.__name__]
 
 
 class Header(Model):
     __tablename__ = 'headers'
+    cache['Header'] = []
+
     
-    key = Column(String, unique=True)
+    key = Column(String, primary_key=True)
     value = Column(String, nullable=False)
     type_ = Column(String, nullable=False)
     
@@ -83,9 +95,13 @@ class Header(Model):
         return bool(self.evaluate())
 
 
+    def __repr__(self) -> str:
+        return f'Header(key={self.key}, value={self.value}, type_={self.type_})'
+
+
     @classmethod
     def get(cls, key: str):
-        return cls.select_one(cls.key == key)
+        return cls.select_one(cls.key == key, 'key', key)
 
 
     @classmethod
@@ -109,8 +125,10 @@ class Header(Model):
 
 class Coin(Model):
     __tablename__ = 'coins'
+    cache['Coin'] = []
 
-    symbol = Column(String, unique=True, nullable=False)
+
+    symbol = Column(String, primary_key=True)
     price = Column(Float, default=0.0, nullable=False)
     historic = Column(ARRAY(Float), default=[])
     keep_historic = Column(Integer, default=50, nullable=False)
@@ -126,6 +144,9 @@ class Coin(Model):
 
 
     def add_historic(self, price: float) -> None:
+        if self.historic == None:
+            self.historic = []
+
         historic = self.historic.copy()
         historic.append(price)
         while len(historic) > self.keep_historic:
@@ -140,8 +161,13 @@ class Coin(Model):
             _qtd = int(quantity)
         else:
             q = Decimal(quantity-float(self.lot_size))
-            _qtd = q.quantize(Decimal(str(float(self.lot_size))))
-        
+            try:
+                _qtd = q.quantize(Decimal(str(float(self.lot_size))))
+            except:
+                print(self.lot_size)
+                print(quantity)
+                print(q)
+
         return str(_qtd)
 
 
@@ -155,7 +181,7 @@ class Coin(Model):
 
     @classmethod
     def get(cls, symbol: str):
-        return cls.select_one(cls.symbol == symbol)
+        return cls.select_one(cls.symbol == symbol, 'symbol', symbol)
     
 
     @classmethod
@@ -167,28 +193,39 @@ class Coin(Model):
         return coin
 
 
-
 class Trade(Model):
     __tablename__ = 'trades'
+    cache['Trade'] = []
 
+
+    coin_symbol =  Column(Integer, ForeignKey('coins.symbol'), primary_key=True)
     price = Column(Float, nullable=False)
     age = Column(Integer, nullable=False)
-    coin_id =  Column(Integer, ForeignKey('coins.id'))
+    id = Column(Integer, nullable=False)
     coin = relationship('Coin', back_populates='trades')
+
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+
+
+    def __repr__(self) -> str:
+        return f'Trade(coin_symbol={self.coin_symbol}, price={self.price}, age={self.age})'
 
 
     @classmethod
     def get(cls, coin: Coin):
-        return cls.select_one(cls.coin == coin)
-
+        return cls.select_one(cls.coin == coin, 'coin_symbol', coin.symbol)
 
 
 class Balance(Model):
     __tablename__ = 'balance'
+    cache['Balance'] = []
 
+
+    coin_symbol = Column(Integer, ForeignKey('coins.symbol'), primary_key=True)
     quantity = Column(Float, nullable=False, default=0.0)
     fee = Column(Float, nullable=False, default=0.0)
-    coin_id = Column(Integer, ForeignKey('coins.id'), unique=True, nullable=False)
     coin = relationship('Coin', back_populates='balance')
 
 
@@ -196,17 +233,21 @@ class Balance(Model):
         self.quantity = quantity
         self.update()
 
+
+    def __repr__(self) -> str:
+        return f'Balance(coin_symbol={self.coin_symbol}, quantity={self.quantity}, fee={self.fee})'
+
     
     @classmethod
     def buy(cls, coin: Coin, quantity: float = None) -> None:
-        usdt = Coin.get('USDT').balance
+        usdt = Balance.get(Coin.get('USDT'))
         if usdt.quantity <= 12:
             raise Exception('Insufficient money!')
         
         if quantity == None:
             quantity = usdt.quantity/coin.price
         
-        balance_coin = coin.balance
+        balance_coin = Balance.get(coin)
 
         balance_coin.set(balance_coin.quantity + (quantity * (1 - balance_coin.fee/100)))
         usdt.set(usdt.quantity - (quantity * coin.price))
@@ -214,9 +255,9 @@ class Balance(Model):
 
     @classmethod
     def sell(cls, coin: Coin, quantity: float = None) -> None:
-        usdt = Coin.get('USDT').balance
+        usdt = Balance.get(Coin.get('USDT'))
+        balance_coin = Balance.get(coin)
 
-        balance_coin = coin.balance
         if quantity == None:
             quantity = balance_coin.quantity
 
@@ -226,26 +267,27 @@ class Balance(Model):
 
     @classmethod
     def get(cls, coin: Coin):
-        return cls.select_one(cls.coin == coin)
+        return cls.select_one(cls.coin == coin, 'coin_symbol', coin.symbol)
 
 
     @classmethod
     def get_create(cls, coin: Coin, quantity: float = 0.0, fee: float = 0.1):
         balance = cls.get(coin)
         if not balance:
-            balance = Balance(coin=coin, quantity=quantity, fee=fee)
+            balance = Balance(coin_symbol=coin.symbol, quantity=quantity, fee=fee)
 
         return balance
 
 
     @classmethod
     def to_dict(cls) -> dict:
-        coins = cls.select_all()
+        balances = cls.select_all()
         res = {}
-        for coin in coins:
-            res[coin.coin.symbol] = coin.quantity
+        for balance in balances:
+            res[balance.coin_symbol] = balance.quantity
 
         return res 
 
 
-Model.metadata.create_all(engine)
+if session:
+    Model.metadata.create_all(engine)

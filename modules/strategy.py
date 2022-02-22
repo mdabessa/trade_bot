@@ -3,7 +3,7 @@ from time import time, sleep
 
 from .utils import nround
 from .manager import Manager
-from .models import Coin, Header, Trade
+from .models import Balance, Coin, Header, Trade
 
 
 
@@ -74,7 +74,7 @@ class StrategyDefault(Strategy):
                     sleep(delay)
 
         else:
-            usdt = Coin.get('USDT').balance.quantity
+            usdt = Balance.get(Coin.get('USDT')).quantity
             self.manager.logger('Starting for the first time.')
             self.manager.logger(f'Balance: {usdt}$ USDT')
             self.manager.logger('Scouting initial prices...')
@@ -95,7 +95,6 @@ class StrategyDefault(Strategy):
             started_time = time()
 
             if not self.manager.att_price():
-                self.manager.logger('Finished...')
                 break
 
             scout = Header.get_create('scout', '0', type_='bool')
@@ -149,7 +148,7 @@ class StrategyDefault(Strategy):
                 if self.max_money <= 0:
                     bought = self.manager.buy(best)
                 else:
-                    usdt = Coin.get('USDT').balance.quantity
+                    usdt = Balance.get(Coin.get('USDT')).quantity
                     if usdt <= self.max_money:
                         bought = self.manager.buy(best)
                     else:
@@ -163,7 +162,7 @@ class StrategyDefault(Strategy):
     def try_sell(self) -> None:
         if len(Trade.select_all()) > 0:
             trade = Trade.select_all()[0]
-            coin = trade.coin
+            coin = Coin.get(trade.coin_symbol)
 
             best = self.best()
             if best != None and best.symbol == coin.symbol:
@@ -175,7 +174,7 @@ class StrategyDefault(Strategy):
                     diff = ((coin.price/trade.price) * 100) - 100
                     
                     start_balance = Header.get('start_balance').evaluate()
-                    balance = Coin.get('USDT').balance.quantity
+                    balance = Balance.get(Coin.get('USDT')).quantity
                     total_diff = ((balance/start_balance) * 100) - 100
 
                     self.log_progress(diff, total_diff)
@@ -187,7 +186,7 @@ class StrategyDefault(Strategy):
     def stop_lose(self) -> None:
         if len(Trade.select_all()) > 0:
             trade = Trade.select_all()[0]
-            coin = trade.coin
+            coin = Coin.get(trade.coin_symbol)
             epoch = Header.get('epoch').evaluate()
             
             if epoch - trade.age > 1440 * self.max_days:
@@ -195,7 +194,7 @@ class StrategyDefault(Strategy):
                     diff = ((coin.price/trade.price) * 100) - 100
                     
                     start_balance = Header.get('start_balance').evaluate()
-                    balance = Coin.get('USDT').balance.quantity
+                    balance = Balance.get(Coin.get('USDT')).quantity
                     total_diff = ((balance/start_balance) * 100) - 100
 
                     self.log_progress(diff, total_diff)
