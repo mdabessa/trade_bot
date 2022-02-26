@@ -8,30 +8,27 @@ from .models import Balance, Coin, Header, Trade
 
 
 class Strategy:
-    def __init__(self, manager: Manager) -> None:
+    def __init__(self, manager: Manager, config: dict) -> None:
         self.manager = manager
-    
+
+        for k, v in config.items():
+            setattr(self, k, v)
+
 
     def run(self, delay: int = 60) -> None: ...
 
 
 class StrategyDefault(Strategy):
     def __init__(self, manager: Manager, configs: dict) -> None:
-        super().__init__(manager)
-        self.below_average = configs['below_average']
-        self.trend_up = configs['trend_up']
-        self.trend_time = configs['trend_time']
-        self.profit = configs['profit']
-        self.max_days = configs['max_days']
-        self.max_money = configs['max_money']
-        self.btc_max_diff = configs['btc_max_diff']
-        self.btc_trend_days = configs['btc_trend_days']
+        super().__init__(manager, configs)
 
-        self.descripton = f'Default strategy\n'+\
-        f'->Buy only when price is {(self.below_average)*100}% below average.\n'+\
-        f'->Buy only when price is trending up more than {self.trend_up*100}% in the last {self.trend_time} minutes.\n'+\
-        f'->Sell only when profits more than {self.profit*100}% or when has passed {self.max_days} days.'
-
+        try:
+            self.descripton = f'Default strategy\n'+\
+            f'->Buy only when price is {(self.below_average)*100}% below average.\n'+\
+            f'->Buy only when price is trending up more than {self.trend_up*100}% in the last {self.trend_time} minutes.\n'+\
+            f'->Sell only when profits more than {self.profit*100}% or when has passed {self.max_days} days.'
+        except:
+            self.descripton = None
 
     def log_progress(self, diff: float, total_diff: float) -> None:
         if diff > 0:
@@ -201,3 +198,30 @@ class StrategyDefault(Strategy):
                     
                 else:
                     self.manager.logger('Can not sell.')
+
+
+class StrategyRelative(StrategyDefault):
+    def __init__(self, manager: Manager, configs: dict) -> None:
+        super().__init__(manager, configs)
+
+        try:
+            self.descripton = f'Default strategy\n'+\
+            f'->Buy best relative coin from coins list.\n'+\
+            f'->Sell only when profits more than {self.profit*100}% or when has passed {self.max_days} days.'
+        except:
+            self.descripton = None
+
+    def best(self, index:int=0):
+        potentials = []
+        best = None
+        for coin in Coin.select_all():
+            med = sum(coin.historic[-self.trend_time:])/self.trend_time
+            diff = coin.price/med
+            potentials.append([coin, diff])
+
+
+        potentials.sort(key=lambda x: x[1])
+        if len(potentials) > 0:
+            best = potentials[-(index+1)][0]
+        
+        return best

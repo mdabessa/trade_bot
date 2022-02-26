@@ -8,5 +8,13 @@
         "max_money": 0,
         "btc_max_diff": 0.94,
         "btc_trend_days": 4
+    },
+    "relative":{
+        "profit": 0.02,
+        "trend_time": 1440,
+        "max_days": 3,
+        "max_money": 0,
+        "btc_max_diff": 0.94,
+        "btc_trend_days": 4
     }
 }

@@ -2,11 +2,11 @@ from traceback import print_exc
 
 from modules.logger import Logger 
 from modules.manager import ManagerHistoricalBacktest
-from modules.strategy import StrategyDefault
+from modules.strategy import StrategyRelative
 from modules.config import STRATEGY, COINS
 
 
-configs = STRATEGY['default']
+configs = STRATEGY['relative']
 
 logger = Logger('./logs/log.txt')
 
@@ -22,7 +22,7 @@ manager = ManagerHistoricalBacktest(
     keep_historic=1440*4
 )
 
-strategy = StrategyDefault(manager, configs)
+strategy = StrategyRelative(manager, configs)
 
 try:
     strategy.run(delay=0)
@@ -30,3 +30,8 @@ except:
     print_exc()
     manager.save_summary()
     
+    from modules.models import cache
+    for c in cache:
+        for i in cache[c]:
+            print(i)
+        print()

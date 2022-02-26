@@ -107,7 +107,7 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         if r:
             epoch = Header.get('epoch').evaluate()
             id_marc = Header.get('id_marc')
-            trade = Trade(coin_symbol=coin.symbol, price=coin.price, age=epoch, id=id_marc.evaluate())
+            trade = Trade(coin=coin, price=coin.price, age=epoch, id=id_marc.evaluate())
             id_marc.set(id_marc.evaluate()+1)
 
             order = {
