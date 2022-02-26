@@ -1,7 +1,7 @@
-from environs import Env
-from os import environ
 import json
+from os import environ
 
+from environs import Env
 
 path = './config/'
 
@@ -21,7 +21,7 @@ coins = coins.split('\n')
 for c in coins:
     if not c.startswith('#'):
         COINS.append(c.upper())
-    
+
 
 with open(f'{path}strategy.json', 'r') as f:
     STRATEGY = json.load(f)
@@ -29,4 +29,3 @@ with open(f'{path}strategy.json', 'r') as f:
 
 with open(f'{path}discord_webhook.json', 'r') as f:
     DISCORD_WEBHOOK = json.load(f)
-

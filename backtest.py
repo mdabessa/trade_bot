@@ -1,10 +1,9 @@
 from traceback import print_exc
 
-from modules.logger import Logger 
+from modules.config import COINS, STRATEGY
+from modules.logger import Logger
 from modules.manager import ManagerHistoricalBacktest
 from modules.strategy import StrategyRelative
-from modules.config import STRATEGY, COINS
-
 
 configs = STRATEGY['relative']
 
@@ -15,11 +14,11 @@ manager = ManagerHistoricalBacktest(
     coins_symbols=COINS,
     database_historic='data/crypto_historic.db',
     start_date='2020-10-01 00:00:00',
-    end_date='2022-01-17 00:00:00', 
+    end_date='2022-01-17 00:00:00',
     summary_fname='backtest/summary.json',
-    usdt_quantity=100, 
+    usdt_quantity=100,
     fee=0.075,
-    keep_historic=1440*4
+    keep_historic=1440 * 4,
 )
 
 strategy = StrategyRelative(manager, configs)
@@ -29,8 +28,9 @@ try:
 except:
     print_exc()
     manager.save_summary()
-    
+
     from modules.models import cache
+
     for c in cache:
         for i in cache[c]:
             print(i)
