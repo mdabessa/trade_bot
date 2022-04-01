@@ -3,9 +3,9 @@ from traceback import print_exc
 from modules.config import COINS, STRATEGY
 from modules.logger import Logger
 from modules.manager import ManagerHistoricalBacktest
-from modules.strategy import StrategyRelative
+from modules.strategy import StrategyML as Strategy
 
-configs = STRATEGY['relative']
+configs = STRATEGY['ml']
 
 logger = Logger('./logs/log.txt')
 
@@ -18,10 +18,11 @@ manager = ManagerHistoricalBacktest(
     summary_fname='backtest/summary.json',
     usdt_quantity=100,
     fee=0.075,
-    keep_historic=1440 * 4,
+    keep_historic=24,
+    minutes_steps=60
 )
 
-strategy = StrategyRelative(manager, configs)
+strategy = Strategy(manager, configs)
 
 try:
     strategy.run(delay=0)

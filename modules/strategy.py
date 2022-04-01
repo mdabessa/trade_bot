@@ -1,9 +1,12 @@
 import datetime as dt
 from time import sleep, time
 
+import numpy as np
+
 from .manager import Manager
 from .models import Balance, Coin, Header, Trade
 from .utils import nround
+from .ml import create_model, normilizer
 
 
 class Strategy:
@@ -47,6 +50,7 @@ class StrategyDefault(Strategy):
         )
 
     def init(self, delay: int):
+        self.manager.logger(self.descripton)
         activity = Header.get('activity')
         if activity:
             activity = dt.datetime.strptime(
@@ -113,7 +117,7 @@ class StrategyDefault(Strategy):
 
     def best(self, index: int = 0) -> Coin | None:
         potentials = []
-        for coin in Coin.select_all():
+        for coin in Coin.get_tradebles():
             med = sum(coin.historic) / len(coin.historic)
             if coin.price < med * (1 - self.below_average):
                 diff = coin.price / coin.historic[-self.trend_time]
@@ -133,14 +137,6 @@ class StrategyDefault(Strategy):
 
     def try_buy(self) -> None:
         if len(Trade.select_all()) == 0:
-            btc = Coin.get('BTC')
-            med = sum(btc.historic[-self.btc_trend_days * 1440 :]) / len(
-                btc.historic[-self.btc_trend_days * 1440 :]
-            )
-            diff = btc.price / med
-            if diff < self.btc_max_diff:
-                return None
-
             best = self.best()
             if best:
                 bought = False
@@ -208,7 +204,7 @@ class StrategyRelative(StrategyDefault):
 
         try:
             self.descripton = (
-                f'Default strategy\n'
+                f'Relative strategy\n'
                 + f'->Buy best relative coin from coins list.\n'
                 + f'->Sell only when profits more than {self.profit*100}% or when has passed {self.max_days} days.'
             )
@@ -218,7 +214,7 @@ class StrategyRelative(StrategyDefault):
     def best(self, index: int = 0):
         potentials = []
         best = None
-        for coin in Coin.select_all():
+        for coin in Coin.get_tradebles():
             med = sum(coin.historic[-self.trend_time :]) / self.trend_time
             diff = coin.price / med
             potentials.append([coin, diff])
@@ -228,3 +224,134 @@ class StrategyRelative(StrategyDefault):
             best = potentials[-(index + 1)][0]
 
         return best
+
+
+class StrategyTrend(StrategyDefault):
+    def __init__(self, manager: Manager, configs: dict) -> None:
+        super().__init__(manager, configs)
+
+        self.descripton = f'Trend Strategy\n' \
+            + ''
+
+
+    def best(self, index: int = 0) -> None:
+        potentials = []
+        for coin in Coin.get_tradebles():
+            diff = coin.price / coin.historic[-self.trend_time]
+            if diff > self.trend_up:
+                potentials.append([coin, diff])
+
+        potentials.sort(key=lambda x: -x[1])
+
+        if len(potentials) >= index + 1:
+            return potentials[index][0]
+
+        elif len(potentials) > 0:
+            return potentials[-1][0]
+
+        else:
+            return None
+
+
+    def try_sell(self) -> None:
+        if len(Trade.select_all()) > 0:
+            btc = Coin.get('BTC')
+            med = sum(btc.historic[-self.btc_trend_days * 1440 :]) / len(
+                btc.historic[-self.btc_trend_days * 1440 :]
+            )
+            diff = btc.price / med
+            if diff < self.btc_max_diff:
+                return None
+
+
+            trade = Trade.select_all()[0]
+            coin = Coin.get(trade.coin_symbol)
+
+            diff = coin.price / coin.historic[-self.trend_time]
+            if diff < 1 - self.trend_down:
+                self.manager.logger(f'Trying sell {coin} ...')
+                if self.manager.sell(coin):
+                    diff = ((coin.price / trade.price) * 100) - 100
+
+                    start_balance = Header.get('start_balance').evaluate()
+                    balance = Balance.get(Coin.get('USDT')).quantity
+                    total_diff = ((balance / start_balance) * 100) - 100
+
+                    self.log_progress(diff, total_diff)
+
+                else:
+                    self.manager.logger('Can not sell.')
+
+
+    def stop_lose(self) -> None: ...
+
+
+class StrategyML(StrategyDefault):
+    def __init__(self, manager: Manager, configs: dict) -> None:
+        super().__init__(manager, configs)
+        self.model = create_model((self.inputs,))
+
+        checkpoint_path = 'ml/cp.ckpt'
+        self.model.load_weights(checkpoint_path)
+        self.descripton = f"Machine Learning Strategy"
+    
+
+    def try_buy(self) -> None:
+        if len(Trade.select_all()) == 0:
+            potentials = []
+            for coin in Coin.get_tradebles():
+                inputs = np.array(coin.historic[-self.inputs:])
+                inputs /= max(inputs)
+                inputs = inputs.reshape(-1, self.inputs)
+                pred = self.model.predict(inputs)[0]
+                if np.argmax(pred) == 2:
+                    potentials.append([coin, pred[2]])
+            
+            potentials.sort(key=lambda x: -x[1])
+            
+            if len(potentials) > 0:
+                best = potentials[-1][0]
+
+                bought = False
+                self.manager.logger(f'Trying buy {best} ...')
+
+                if self.max_money <= 0:
+                    bought = self.manager.buy(best)
+                else:
+                    usdt = Balance.get(Coin.get('USDT')).quantity
+                    if usdt <= self.max_money:
+                        bought = self.manager.buy(best)
+                    else:
+                        quantity = self.max_money / best.price
+                        bought = self.manager.buy(best, quantity)
+
+                if not bought:
+                    self.manager.logger('Can not buy.')
+
+
+    def try_sell(self) -> None:
+        if len(Trade.select_all()) > 0:
+            trade = Trade.select_all()[0]
+            coin = Coin.get(trade.coin_symbol)
+
+            inputs = np.array(coin.historic[-self.inputs:])
+            inputs /= max(inputs)
+            inputs = inputs.reshape(-1, self.inputs)
+
+            pred = self.model.predict(inputs)[0]
+            if np.argmax(pred) == 1:
+                self.manager.logger(f'Trying sell {coin} ...')
+                if self.manager.sell(coin):
+                    diff = ((coin.price / trade.price) * 100) - 100
+
+                    start_balance = Header.get('start_balance').evaluate()
+                    balance = Balance.get(Coin.get('USDT')).quantity
+                    total_diff = ((balance / start_balance) * 100) - 100
+
+                    self.log_progress(diff, total_diff)
+
+                else:
+                    self.manager.logger('Can not sell.')
+
+
+    def stop_lose(self) -> None: ...

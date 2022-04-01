@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-from matplotlib.pyplot import hist
 from sqlalchemy import (Column, Float, ForeignKey, Integer, String,
                         create_engine)
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -228,6 +227,12 @@ class Coin(Model):
             )
 
         return coin
+
+    @classmethod
+    def get_tradebles(cls):
+        coins = cls.select_all().copy()
+        coins.remove(cls.get('USDT'))
+        return coins
 
 
 class Trade(Model):

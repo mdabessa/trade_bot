@@ -16,5 +16,19 @@
         "max_money": 0,
         "btc_max_diff": 0.94,
         "btc_trend_days": 4
+    },
+    "trend":{
+        "profit": 0.02,
+        "trend_time": 1440,
+        "trend_up": 0.02,
+        "trend_down": 0.03,
+        "max_days": 3,
+        "max_money": 0,
+        "btc_max_diff": 0.94,
+        "btc_trend_days": 4
+    },
+    "ml":{
+        "inputs": 24,
+        "max_money": 0
     }
 }

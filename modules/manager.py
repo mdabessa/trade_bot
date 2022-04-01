@@ -43,7 +43,8 @@ class ManagerBacktest(Manager):
             Balance.get_create(coin, 0, fee)
 
     def buy(self, coin: Coin, quantity: float = -1) -> bool:
-        usdt_balance = Balance.get(Coin.get('USDT'))
+        usdt = Coin.get('USDT')
+        usdt_balance = Balance.get(usdt)
         if quantity <= 0:
             quantity = usdt_balance.quantity / coin.price
 
@@ -80,6 +81,7 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         usdt_quantity: float = 100,
         fee: float = 0.1,
         keep_historic: int = 1440,
+        minutes_steps: int = 1
     ) -> None:
 
         super().__init__(
@@ -95,6 +97,7 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         self.database_historic = sql.connect(database_historic)
         self.simulation_time = TimeCount()
         self.date = ''
+        self.minutes_steps = minutes_steps
 
         id_marc = Header.get_create('id_marc', '0', 'int')
         self.gen_id = IdGenerator(id_marc.evaluate())
@@ -167,7 +170,7 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         return r
 
     def att_price(self) -> None:
-        self.date += dt.timedelta(minutes=1)
+        self.date += dt.timedelta(minutes=self.minutes_steps)
         if self.date >= self.end_date:
             for trade in Trade.select_all():
                 coin = Coin.get(trade.coin_symbol)
