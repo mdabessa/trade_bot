@@ -1,0 +1,6 @@
+psycopg2-binary==2.9.3
+environs==9.3.*
+python-binance==1.0.*
+dhooks==1.1.4
+numpy==1.22.1
+SQLAlchemy==1.4.*

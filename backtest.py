@@ -1,25 +1,28 @@
 from traceback import print_exc
 
-from modules.config import COINS, STRATEGY
+from modules.config import COINS, STRATEGY, DATABASE_URL
+
+DATABASE_URL = None
+
 from modules.logger import Logger
 from modules.manager import ManagerHistoricalBacktest
-from modules.strategy import StrategyML as Strategy
+from modules.strategy import StrategyRelative as Strategy
 
-configs = STRATEGY['ml']
+configs = STRATEGY["relative"]
 
-logger = Logger('./logs/log.txt')
+logger = Logger("./logs/log.txt")
 
 manager = ManagerHistoricalBacktest(
     logger=logger,
     coins_symbols=COINS,
-    database_historic='data/crypto_historic.db',
-    start_date='2020-10-01 00:00:00',
-    end_date='2022-01-17 00:00:00',
-    summary_fname='backtest/summary.json',
+    database_historic="data/crypto_historic.db",
+    start_date="2020-10-01 00:00:00",
+    end_date="2022-01-17 00:00:00",
+    summary_fname="backtest/summary.json",
     usdt_quantity=100,
     fee=0.075,
-    keep_historic=24,
-    minutes_steps=60
+    keep_historic=1440,
+    minutes_steps=1,
 )
 
 strategy = Strategy(manager, configs)

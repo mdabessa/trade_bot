@@ -26,10 +26,10 @@ class IdGenerator:
 
 def nround(num: float, n: int = 3) -> float:
     try:
-        _num1, _num2 = str(num).split('.')
+        _num1, _num2 = str(num).split(".")
 
         if len(_num2) > n:
-            r = _num1 + '.' + _num2[0:n]
+            r = _num1 + "." + _num2[0:n]
             return float(r)
         else:
             return float(num)

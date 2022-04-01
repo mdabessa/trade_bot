@@ -1,8 +1,10 @@
 # Environment
 *.env
+config/discord_webhook.json
 
 # Data
 *.csv
+*.db
 backtest/*.json
 logs/log.txt
 

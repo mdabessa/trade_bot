@@ -9,15 +9,15 @@ import pandas as pd
 
 from modules.config import COINS
 
-connection = sql.connect('./data/crypto_historic.db')
+connection = sql.connect("./data/crypto_historic.db")
 
 
 for coin in COINS[8:9]:
     print(coin)
-    path = f'./data/Binance_{coin}USDT.csv'
-    print('Carregando csv...')
+    path = f"./data/Binance_{coin}USDT.csv"
+    print("Carregando csv...")
     df = pd.read_csv(path)
-    print('criando table...')
+    print("criando table...")
     query = f"""CREATE TABLE IF NOT EXISTS {coin}(
         unix varchar(255),
         date datetime2,
@@ -35,7 +35,7 @@ for coin in COINS[8:9]:
     cursor = connection.cursor()
     cursor.execute(query)
 
-    print('Inserindo valores...')
+    print("Inserindo valores...")
     v = list(df.values)
     v.reverse()
 

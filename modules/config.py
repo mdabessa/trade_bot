@@ -3,29 +3,32 @@ from os import environ
 
 from environs import Env
 
-path = './config/'
+path = "./config/"
 
 env = Env()
-env.read_env(f'{path}.env')
+env.read_env(f"{path}.env")
 
 
-DATABASE_URL = environ['DATABASE_URL']
-DATABASE_URL = None
-
+DATABASE_URL = environ["DATABASE_URL"]
+API_KEY = environ["API_KEY"]
+API_SECRET = environ["API_SECRET"]
+DISCORD_MENTION = environ["DISCORD_MENTION"]
 
 COINS = []
-with open(f'{path}coin_list.txt', 'r') as f:
+with open(f"{path}coin_list.txt", "r") as f:
     coins = f.read()
 
-coins = coins.split('\n')
+coins = coins.split("\n")
 for c in coins:
-    if not c.startswith('#'):
+    if not c.startswith("#"):
         COINS.append(c.upper())
 
 
-with open(f'{path}strategy.json', 'r') as f:
+with open(f"{path}strategy.json", "r") as f:
     STRATEGY = json.load(f)
 
 
-with open(f'{path}discord_webhook.json', 'r') as f:
+with open(f"{path}discord_webhook.json", "r") as f:
     DISCORD_WEBHOOK = json.load(f)
+
+DISCORD_WEBHOOK["url"] = environ["DISCORD_WEBHOOK"]

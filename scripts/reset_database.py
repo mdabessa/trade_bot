@@ -7,7 +7,7 @@ import psycopg2
 
 from modules.config import DATABASE_URL
 
-tables = ['balance', 'coins', 'headers', 'trades']
+tables = ["balance", "coins", "headers", "trades"]
 
 conn = psycopg2.connect(DATABASE_URL)
 
