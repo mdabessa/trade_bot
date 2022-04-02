@@ -3,10 +3,12 @@ import traceback
 from modules.config import (
     API_KEY,
     API_SECRET,
+    DISCORD_WEBHOOK_URL,
+    DISCORD_WEBHOOK_USERNAME,
+    DISCORD_WEBHOOK_AVATAR,
+    DISCORD_USER_ID_MENTION,
     COINS,
     STRATEGY,
-    DISCORD_WEBHOOK,
-    DISCORD_MENTION,
 )
 from modules.logger import DiscordLogger
 from modules.manager import ManagerBinance
@@ -16,9 +18,9 @@ from modules.models import Header
 configs = STRATEGY["relative"]
 
 logger = DiscordLogger(
-    webhook_url=DISCORD_WEBHOOK["url"],
-    avatar_url=DISCORD_WEBHOOK["avatar_url"],
-    webhook_username=DISCORD_WEBHOOK["username"],
+    webhook_url=DISCORD_WEBHOOK_URL,
+    avatar_url=DISCORD_WEBHOOK_AVATAR,
+    webhook_username=DISCORD_WEBHOOK_USERNAME,
     fname="./logs/log.txt",
 )
 
@@ -41,7 +43,7 @@ if __name__ == "__main__":
             logger("Connection reset by peer or Read timed out.")
 
         else:
-            logger(str(e), mention_id=DISCORD_MENTION)
+            logger(str(e), mention_id=DISCORD_USER_ID_MENTION)
             t = str(traceback.format_exc())
             logger(t, file=True)
             scout = Header.create_update("scout", "1", type_="bool")

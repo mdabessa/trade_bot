@@ -1,9 +1,6 @@
 from traceback import print_exc
 
-from modules.config import COINS, STRATEGY, DATABASE_URL
-
-DATABASE_URL = None
-
+from modules.config import COINS, STRATEGY
 from modules.logger import Logger
 from modules.manager import ManagerHistoricalBacktest
 from modules.strategy import StrategyRelative as Strategy
