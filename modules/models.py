@@ -231,7 +231,9 @@ class Coin(Model):
     @classmethod
     def get_tradebles(cls):
         coins = cls.select_all().copy()
-        coins.remove(cls.get("USDT"))
+        usdt = cls.get("USDT")
+        if usdt:
+            coins.remove(usdt)
         return coins
 
 
