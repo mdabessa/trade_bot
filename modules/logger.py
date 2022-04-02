@@ -20,14 +20,16 @@ class Logger:
             os.remove(self.fname)
         except:
             pass
-
-    def __call__(self, info: str) -> None:
+    
+    def log(self, info: str) -> None:
         info = str(info)
         print(info + "\n")
         if self.fname:
             with open(self.fname, "a") as f:
                 f.write(info + "\n\n")
 
+    def __call__(self, info: str) -> None:
+        self.log(info)        
 
 class DiscordLogger(Logger):
     def __init__(
@@ -50,7 +52,7 @@ class DiscordLogger(Logger):
         else:
             self.hook.send(msg)
 
-    def __call__(self, info: str, mention_id: int = None, file: bool = False) -> None:
+    def log(self, info: str, mention_id: int = None, file: bool = False) -> None:
         info = str(info)
         super().log(info)
 
@@ -80,3 +82,6 @@ class DiscordLogger(Logger):
                     super().log(e)
                     self.send("Erro no logger:")
                     self.send(e)
+
+    def __call__(self, info: str, mention_id: int = None, file: bool = False) -> None:
+        self.log(info, mention_id, file)

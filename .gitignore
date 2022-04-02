@@ -11,3 +11,6 @@ logs/log.txt
 # Python
 *.pyc
 *.pyo
+
+#VScode
+.vscode
