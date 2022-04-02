@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
 
 from modules.manager import ManagerBinance
 from modules.logger import Logger
-from modules.config import API_KEY, API_SECRET, COINS, DISCORD_WEBHOOK
+from modules.config import API_KEY, API_SECRET, COINS
 
 logger = Logger("./logs/log.txt")
 
