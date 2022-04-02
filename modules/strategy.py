@@ -68,7 +68,7 @@ class StrategyDefault(Strategy):
                 self.manager.logger(self.descripton)
                 self.manager.logger("Continuing from the last stop.")
                 self.manager.logger("Scouting initial prices...")
-                coin = Coin.get("USDT")
+                coin = Coin.get_tradebles()[0]
                 l = len(coin.historic)
                 for _ in range(0, self.manager.keep_historic - l):
                     self.manager.att_price()
