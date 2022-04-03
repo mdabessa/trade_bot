@@ -10,20 +10,23 @@ from modules.config import (
     COINS,
     STRATEGY,
 )
-from modules.logger import DiscordLogger
+from modules.logger import DiscordLogger, Logger
 from modules.manager import ManagerBinance
 from modules.strategy import StrategyRelative as Strategy
 from modules.models import Header
 
 configs = STRATEGY["relative"]
 
-logger = DiscordLogger(
-    webhook_url=DISCORD_WEBHOOK_URL,
-    avatar_url=DISCORD_WEBHOOK_AVATAR,
-    webhook_username=DISCORD_WEBHOOK_USERNAME,
-    fname="./logs/log.txt",
-)
+if DISCORD_WEBHOOK_URL:
+    logger = DiscordLogger(
+        webhook_url=DISCORD_WEBHOOK_URL,
+        avatar_url=DISCORD_WEBHOOK_AVATAR,
+        webhook_username=DISCORD_WEBHOOK_USERNAME,
+        fname="./logs/log.txt",
+    )
 
+else:
+    logger = Logger("./logs/log.txt")
 
 manager = ManagerBinance(
     logger=logger,
