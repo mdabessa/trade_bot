@@ -1,0 +1,38 @@
+{
+    "name": "Trade Bot",
+    "description": "A crypto trading bot written in python",
+    "repository": "https://github.com/mdabessa/trade_bot",
+    "keywords": ["python", "bot", "trade", "crypto", "binance", "market"],
+    "env":{
+        "API_KEY": {
+            "description": "API Key from Binance",
+            "required": true
+        },
+        "API_SECRET": {
+            "description": "API Secrete from Binance",
+            "required": true
+        },
+        "DISCORD_WEBHOOK_URL": {
+            "description": "Discord webhook url (only for discord logger)",
+            "required": false
+        },
+        "DISCORD_USER_ID_MENTION": {
+            "description": "Discord user id to mention (only for discord logger)",
+            "required": false
+        },
+        "DISCORD_WEBHOOK_USERNAME": {
+            "description": "Discord webhook username (only for discord logger)",
+            "value": "Logger",
+            "required": false
+        },
+        "DISCORD_WEBHOOK_AVATAR": {
+            "description": "Discord webhook avatar image url (only for discord logger)",
+            "required": false
+        }
+    },
+    "worker": {
+        "quantity": 1,
+        "size": "free"
+      }
+
+}
