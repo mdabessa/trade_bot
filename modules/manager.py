@@ -312,6 +312,7 @@ class ManagerBinance(Manager):
             coin.set_price(price)
 
         Header.create_update("activity", str(date))
+        return True
 
     def get_balance(self, symbol: str) -> float:
         infos = self.client.get_account()

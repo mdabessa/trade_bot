@@ -96,6 +96,7 @@ class StrategyDefault(Strategy):
             started_time = time()
 
             if not self.manager.att_price():
+                self.manager.logger('Finished.')
                 break
 
             scout = Header.get_create("scout", "0", type_="bool")
