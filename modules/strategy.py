@@ -49,7 +49,6 @@ class StrategyDefault(Strategy):
         )
 
     def init(self, delay: int):
-        self.manager.logger(self.descripton)
         activity = Header.get("activity")
         if activity:
             activity = dt.datetime.strptime(activity.evaluate(), "%Y-%m-%d %H:%M:%S")
@@ -65,7 +64,6 @@ class StrategyDefault(Strategy):
                 Header.create_update("epoch", "0", "int")
 
             else:
-                self.manager.logger(self.descripton)
                 self.manager.logger("Continuing from the last stop.")
                 self.manager.logger("Scouting initial prices...")
                 coin = Coin.get_tradebles()[0]
@@ -73,9 +71,12 @@ class StrategyDefault(Strategy):
                 for _ in range(0, self.manager.keep_historic - l):
                     self.manager.att_price()
                     sleep(delay)
+             
+                Header.create_update("epoch", "0", "int")
 
         else:
             usdt = self.manager.get_balance("USDT")
+            self.manager.logger(self.descripton)
             self.manager.logger("Starting for the first time.")
             self.manager.logger(f"Balance: {usdt}$ USDT")
             self.manager.logger("Scouting initial prices...")

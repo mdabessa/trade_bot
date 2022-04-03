@@ -13,7 +13,7 @@ From root directory runs `python main.py`
 From root directory runs on terminal `pip install -r requirements.txt`
     
 ### Create .env
-Create a file named `config/.env` based off `config/.env.example`, then configure all your environment variables. 
+Create a file named `config/.env` based on `config/.env.example`, then configure all your environment variables. 
 
 #### Environment variables
 - `API_KEY` - API Key from Binance. 
@@ -46,7 +46,7 @@ From root directory runs `python backtest.py`.
 ### Backtest summary
 Backtest when finished will create a summary.json where you can run the `backtest/summary_view.py` to plot and resume the backtest.
 
-## Deploy on heroku
+## Deploy to heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/mdabessa/trade_bot)
 
 ## Disclaimer
