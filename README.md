@@ -13,7 +13,7 @@ From root directory runs `python main.py`
 From root directory runs on terminal `pip install -r requirements.txt`
     
 ### Create .env
-Create a file named `config/.env` based off `config/.env.example`, then configure all your environment variables. 
+Create a file named `config/.env` based on `config/.env.example`, then configure all your environment variables. 
 
 #### Environment variables
 - `API_KEY` - API Key from Binance. 
