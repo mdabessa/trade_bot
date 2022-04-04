@@ -134,7 +134,7 @@ class ManagerHistoricalBacktest(ManagerBacktest):
             epoch = Header.get("epoch").evaluate()
             id_marc = Header.get("id_marc")
             trade = Trade(coin=coin, price=coin.price, age=epoch, id=id_marc.evaluate())
-            id_marc.set(id_marc.evaluate() + 1)
+            id_marc.set(self.gen_id())
 
             order = {
                 "id": trade.id,
@@ -242,6 +242,9 @@ class ManagerBinance(Manager):
         self.client = Client(api_key=api_key, api_secret=api_secret)
         self.keep_historic = keep_historic
         self.date = dt.datetime.today()
+        id_marc = Header.get_create("id_marc", "0", "int")
+        self.gen_id = IdGenerator(id_marc.evaluate())
+
 
         for symbol in coins_symbols:
             pair = symbol.upper() + "USDT"
@@ -261,7 +264,7 @@ class ManagerBinance(Manager):
         if quantity <= 0:
             quantity = usdt_balance / coin.price
 
-        quantity = float(coin.quantity_lot_size(quantity))
+        quantity = coin.quantity_lot_size(quantity)
 
         response = self.client.order_market_buy(symbol=pair, quantity=str(quantity))
 
@@ -271,9 +274,15 @@ class ManagerBinance(Manager):
 
         self.logger(
             f'{response["executedQty"]} {coin.symbol} bought at {coin.price}!\n'
-            + f"- {quantity * coin.price} USDT\n"
+            + f"- {float(quantity) * coin.price} USDT\n"
             + f'Fee: {commission} {response["fills"][0]["commissionAsset"]}'
         )
+
+        epoch = Header.get("epoch").evaluate()
+        id_marc = Header.get("id_marc")
+        
+        Trade(coin=coin, price=coin.price, age=epoch, id=id_marc.evaluate())
+        id_marc.set(self.gen_id())
 
         return True
 
@@ -283,7 +292,7 @@ class ManagerBinance(Manager):
         if quantity <= 0:
             quantity = self.get_balance(coin.symbol)
 
-        quantity = float(coin.quantity_lot_size(quantity))
+        quantity = coin.quantity_lot_size(quantity)
 
         response = self.client.order_market_sell(symbol=pair, quantity=str(quantity))
 
@@ -293,9 +302,12 @@ class ManagerBinance(Manager):
 
         self.logger(
             f'{response["executedQty"]} {coin.symbol} sold at {coin.price}!\n'
-            + f"+ {quantity * coin.price} USDT\n"
+            + f"+ {float(quantity) * coin.price} USDT\n"
             + f'Fee: {commission} {response["fills"][0]["commissionAsset"]}'
         )
+
+        trade = Trade.get(coin)
+        trade.delete()
 
         return True
 
