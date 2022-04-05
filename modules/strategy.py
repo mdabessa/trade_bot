@@ -91,7 +91,10 @@ class StrategyDefault(Strategy):
         self.init(delay)
         self.manager.logger("Starting trade...")
         epoch = Header.get("epoch")
-
+        scout = Header.get_create("scout", "0", type_="bool")
+        _scout = scout.evaluate()
+        print(f'Scout: {_scout}')
+        
         while True:
             started_time = time()
 
@@ -99,7 +102,12 @@ class StrategyDefault(Strategy):
                 self.manager.logger('Finished.')
                 break
 
-            scout = Header.get_create("scout", "0", type_="bool")
+            scout = Header.get('scout')
+
+            if scout.evaluate() != _scout:
+                _scout = scout.evaluate()
+                print(f'Scout: {_scout}')
+
             if not scout:
                 self.try_sell()
                 self.try_buy()
