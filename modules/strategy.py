@@ -93,7 +93,7 @@ class StrategyDefault(Strategy):
         epoch = Header.get("epoch")
         scout = Header.get_create("scout", "0", type_="bool")
         _scout = scout.evaluate()
-        print(f'Scout: {_scout}')
+        self.manager.logger(f'Scout: {_scout}')
         
         while True:
             started_time = time()
@@ -106,7 +106,7 @@ class StrategyDefault(Strategy):
 
             if scout.evaluate() != _scout:
                 _scout = scout.evaluate()
-                print(f'Scout: {_scout}')
+                self.manager.logger(f'Scout: {_scout}')
 
             if not scout:
                 self.try_sell()
