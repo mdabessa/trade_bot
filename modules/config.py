@@ -19,14 +19,10 @@ DISCORD_WEBHOOK_USERNAME = environ["DISCORD_WEBHOOK_USERNAME"]
 DISCORD_WEBHOOK_AVATAR = environ["DISCORD_WEBHOOK_AVATAR"]
 
 
-COINS = []
-with open(f"{path}coin_list.txt", "r") as f:
-    coins = f.read()
+with open(f"{path}coin_list.json", "r") as f:
+    coins = json.load(f)
 
-coins = coins.split("\n")
-for c in coins:
-    if not c.startswith("#"):
-        COINS.append(c.upper())
+COINS = coins["coin_list"]
 
 
 with open(f"{path}strategy.json", "r") as f:
