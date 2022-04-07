@@ -330,3 +330,65 @@ class ManagerBinance(Manager):
         sleep(0.5)
         c = filter(lambda x: x["asset"] == symbol, infos["balances"])
         return float(list(c)[0]["free"])
+
+
+class ManagerPaperTradeBinance(ManagerBinance):
+    def __init__(
+        self,
+        logger: Logger,
+        coins_symbols: list,
+        api_key: str,
+        api_secret: str,
+        usdt_quantity: float = 100,
+        fee: float = 0.1,
+        keep_historic: int = 1440,
+    ) -> None:
+        super().__init__(logger, coins_symbols, api_key, api_secret, keep_historic)
+
+        usdt = Coin.get_create("USDT", 1, keep_historic, "0.00000001")
+        Balance.get_create(usdt, usdt_quantity, fee)
+
+        for symbol in coins_symbols:
+            coin = Coin.get_create(symbol, 0, keep_historic, "0.00000001")
+            Balance.get_create(coin, 0, fee)
+
+    def buy(self, coin: Coin, quantity: float = -1) -> bool:
+        r = super().buy(coin, quantity)
+        if r:
+            epoch = Header.get("epoch").evaluate()
+            id_marc = Header.get("id_marc")
+            trade = Trade(coin=coin, price=coin.price, age=epoch, id=id_marc.evaluate())
+            id_marc.set(self.gen_id())
+
+            order = {
+                "id": trade.id,
+                "date": str(self.date),
+                "epoch": epoch,
+                "type": "buy",
+                "symbol": coin.symbol,
+                "price": coin.price,
+            }
+
+            self.summary["orders_historic"].append(order)
+
+        return r
+
+    def sell(self, coin: Coin, quantity: float = -1) -> bool:
+        r = super().sell(coin, quantity)
+        if r:
+            epoch = Header.get("epoch").evaluate()
+
+            trade = Trade.get(coin)
+
+            order = {
+                "id": trade.id,
+                "date": str(self.date),
+                "epoch": epoch,
+                "type": "sell",
+                "symbol": coin.symbol,
+                "price": coin.price,
+            }
+
+            self.summary["orders_historic"].append(order)
+            trade.delete()
+        return r
