@@ -20,7 +20,7 @@ class Logger:
             os.remove(self.fname)
         except:
             pass
-    
+
     def log(self, info: str) -> None:
         info = str(info)
         print(info + "\n")
@@ -29,7 +29,8 @@ class Logger:
                 f.write(info + "\n\n")
 
     def __call__(self, info: str) -> None:
-        self.log(info)        
+        self.log(info)
+
 
 class DiscordLogger(Logger):
     def __init__(

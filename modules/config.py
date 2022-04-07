@@ -33,4 +33,4 @@ with open(f"{path}strategy.json", "r") as f:
     STRATEGY = json.load(f)
 
 
-DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://')
+DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")

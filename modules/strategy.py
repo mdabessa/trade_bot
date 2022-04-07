@@ -71,7 +71,7 @@ class StrategyDefault(Strategy):
                 for _ in range(0, self.manager.keep_historic - l):
                     self.manager.att_price()
                     sleep(delay)
-             
+
                 Header.create_update("epoch", "0", "int")
 
         else:
@@ -93,20 +93,20 @@ class StrategyDefault(Strategy):
         epoch = Header.get("epoch")
         scout = Header.get_create("scout", "0", type_="bool")
         _scout = scout.evaluate()
-        self.manager.logger(f'Scout: {_scout}')
-        
+        self.manager.logger(f"Scout: {_scout}")
+
         while True:
             started_time = time()
 
             if not self.manager.att_price():
-                self.manager.logger('Finished.')
+                self.manager.logger("Finished.")
                 break
 
-            scout = Header.get('scout')
+            scout = Header.get("scout")
 
             if scout.evaluate() != _scout:
                 _scout = scout.evaluate()
-                self.manager.logger(f'Scout: {_scout}')
+                self.manager.logger(f"Scout: {_scout}")
 
             if not scout:
                 self.try_sell()

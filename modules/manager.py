@@ -245,7 +245,6 @@ class ManagerBinance(Manager):
         id_marc = Header.get_create("id_marc", "0", "int")
         self.gen_id = IdGenerator(id_marc.evaluate())
 
-
         for symbol in coins_symbols:
             pair = symbol.upper() + "USDT"
             price = float(self.client.get_margin_price_index(symbol=pair)["price"])
@@ -280,7 +279,7 @@ class ManagerBinance(Manager):
 
         epoch = Header.get("epoch").evaluate()
         id_marc = Header.get("id_marc")
-        
+
         Trade(coin=coin, price=coin.price, age=epoch, id=id_marc.evaluate())
         id_marc.set(self.gen_id())
 
