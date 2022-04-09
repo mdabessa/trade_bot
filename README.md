@@ -34,17 +34,13 @@ Even if you don't want to use the discord logger, all the environment variables 
 With the backtest you can test the strategy simulating the market with crypto data historic.
 
 ### Downloading the data
-You can download the crypto historical data on [cryptodatadownload](https://www.cryptodatadownload.com/data/binance/).
-Download the data `Minute` for each coin in `config/coin_list.txt`.
-
-### Preparing the data
-Remove the Headers from all .csv files and run the `data/db_historic.py` script to create a database with all coins historic.
+You can run from root directory the `script/db_historic` script to download automatically the .csv files and create the `data/crypto_historic.db`.
 
 ### Running the backtest
 From root directory runs `python backtest.py`.
 
 ### Backtest summary
-Backtest when finished will create a summary.json where you can run the `backtest/summary_view.py` to plot and resume the backtest.
+Backtest when finished will create a summary.json where you can run from root directory the `backtest/summary_view.py` to plot and resume the backtest.
 
 ## Deploy to heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/mdabessa/trade_bot)
