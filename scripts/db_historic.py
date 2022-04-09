@@ -12,9 +12,6 @@ from modules.config import COINS
 
 connection = sql.connect("./data/crypto_historic.db")
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0])))
-
-
 it = tqdm.tqdm(COINS, desc="Downloading csv...")
 for coin in it:
     response = urllib.request.urlopen(
