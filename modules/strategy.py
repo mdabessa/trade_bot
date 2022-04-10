@@ -222,7 +222,8 @@ class StrategyRelative(StrategyDefault):
         for coin in Coin.get_tradebles():
             med = sum(coin.historic[-self.trend_time :]) / self.trend_time
             diff = coin.price / med
-            potentials.append([coin, diff])
+            if diff > 1:
+                potentials.append([coin, diff])
 
         potentials.sort(key=lambda x: x[1])
         if len(potentials) > 0:
@@ -257,14 +258,6 @@ class StrategyTrend(StrategyDefault):
 
     def try_sell(self) -> None:
         if len(Trade.select_all()) > 0:
-            btc = Coin.get("BTC")
-            med = sum(btc.historic[-self.btc_trend_days * 1440 :]) / len(
-                btc.historic[-self.btc_trend_days * 1440 :]
-            )
-            diff = btc.price / med
-            if diff < self.btc_max_diff:
-                return None
-
             trade = Trade.select_all()[0]
             coin = Coin.get(trade.coin_symbol)
 
