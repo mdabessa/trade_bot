@@ -61,8 +61,6 @@ class StrategyDefault(Strategy):
                     self.manager.att_price()
                     sleep(delay)
 
-                Header.create_update("epoch", "0", "int")
-
             else:
                 self.manager.logger("Continuing from the last stop.")
                 self.manager.logger("Scouting initial prices...")
@@ -72,7 +70,6 @@ class StrategyDefault(Strategy):
                     self.manager.att_price()
                     sleep(delay)
 
-                Header.create_update("epoch", "0", "int")
 
         else:
             usdt = self.manager.get_balance("USDT")
