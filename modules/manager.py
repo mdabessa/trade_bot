@@ -93,6 +93,9 @@ class ManagerHistoricalBacktest(ManagerBacktest):
         super().__init__(logger, coins_symbols, usdt_quantity, fee, keep_historic)
 
         self.summary = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "coins": coins_symbols,
             "daily_close": [],
             "daily_close_btc": [],
             "orders_historic": [],

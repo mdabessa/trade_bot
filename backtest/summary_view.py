@@ -2,6 +2,31 @@ import json
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sqlite3 as sql
+import datetime as dt
+
+
+def db(url):
+    conn = sql.connect(url)
+    return conn
+
+
+def get_currencies(connection: sql.Connection, start_date: dt.datetime, end_date: dt.datetime, coins: list):
+    cursor = connection.cursor()
+    currencies = {}
+    for coin in coins:
+        r = cursor.execute(f"""
+                SELECT * FROM {coin}
+                WHERE date BETWEEN '{start_date}' AND '{end_date}'
+            """)
+        currencies[coin] = r.fetchall()
+    cursor.close()
+    return currencies
+
+
+def summary(fname):
+    with open(fname, "r") as f:
+        return json.load(f)
 
 
 def diff_daily(data, plot=False):
@@ -14,20 +39,21 @@ def diff_daily(data, plot=False):
     print(
         f"start: {btc[0]} BTC, finish: {btc[-1]} BTC, max: {max(btc)} BTC, min: {min(btc)} BTC"
     )
+    
+    if plot:
+        _usdt = list(map(lambda x: ((x / usdt[0]) * 100) - 100, usdt))
+        _btc = list(map(lambda x: ((x / btc[0]) * 100) - 100, btc))
 
-    _usdt = list(map(lambda x: ((x / usdt[0]) * 100) - 100, usdt))
-    _btc = list(map(lambda x: ((x / btc[0]) * 100) - 100, btc))
+        _usdt.insert(0, 0)
+        _btc.insert(0, 0)
 
-    _usdt.insert(0, 0)
-    _btc.insert(0, 0)
-
-    plt.plot(_btc, label="BTC")
-    plt.plot(_usdt, label="USDT")
-    plt.title("Progress")
-    plt.xlabel("Days")
-    plt.ylabel("%")
-    plt.legend()
-    plt.show()
+        plt.plot(_btc, label="BTC")
+        plt.plot(_usdt, label="USDT")
+        plt.title("Progress")
+        plt.xlabel("Days")
+        plt.ylabel("%")
+        plt.legend()
+        plt.show()
 
 
 def order_freq(data, plot=False):
@@ -41,11 +67,11 @@ def order_freq(data, plot=False):
     c = max(diffs)
     c = (c / 60) / 24
     date = data["orders_historic"][np.argmax(diffs)]["date"]
-    print(f"Longer period without activity was {c} days on {date}")
+    print(f"Longer streak without activity was {c} days on {date}")
 
     m = sum(diffs) / len(diffs)
     m = (m / 60) / 24
-    print(f"Avarege period between buys: {m} days")
+    print(f"Avarege streak between buys: {m} days")
 
     if plot:
         plt.plot(diffs)
@@ -148,17 +174,76 @@ def coin_quality(data):
         )
 
 
-def summary(fname):
-    with open(fname, "r") as f:
-        return json.load(f)
+def streak_pattern(data):
+    streaks = []
+    streak = None
+    b_orders = list(filter(lambda x: x["type"] == "buy", data["orders_historic"]))
+    s_orders = list(filter(lambda x: x["type"] == "sell", data["orders_historic"]))
+    
+    for b_order in b_orders:
+        s_order = list(filter(lambda x: x['id'] == b_order['id'], s_orders))[0]
+        diff = s_order['price'] - b_order['price']
+        if diff != 0:
+            diff = diff/abs(diff)
+
+
+        if streak == None:
+            streak = {
+                'start_date': b_order['date'],
+                'end_date': s_order['date'],
+                'diff': diff,
+                'trades_count': 1
+            }
+
+            continue
+            
+        if diff == streak['diff']:
+            streak['end_date'] = s_order['date']
+            streak['trades_count'] += 1
+        
+        else:
+            streaks.append(streak)
+            streak = {
+                'start_date': b_order['date'],
+                'end_date': s_order['date'],
+                'diff': diff,
+                'trades_count': 1
+            }
+        
+    if streak != None:
+        streaks.append(streak)
+
+    print(len(streaks))
+    conn = db('./data/crypto_historic.db')
+    total_med = {'pos':[], 'neg':[]} 
+    for p in streaks:
+        print(p)
+        start = dt.datetime.strptime(p['start_date'], "%Y-%m-%d %H:%M:%S")
+        dist = dt.timedelta(days=10)
+        pre = start - dist
+        currencies = get_currencies(conn, pre, start, data['coins'])
+        
+        btc = currencies['BTC']
+        price = [x[3] for x in btc]
+        med = ((price[-1]/price[0])-1)*100
+        if p['diff'] == 1:
+            total_med['pos'].append(med)
+        else:
+            total_med['neg'].append(med)
+
+    total_med['pos'] = sum(total_med['pos'])/len(total_med['pos'])
+    total_med['neg'] = sum(total_med['neg'])/len(total_med['neg'])
+    print(total_med)
 
 
 data = summary("./backtest/summary.json")
 
-diff_daily(data, True)
-order_freq(data, True)
+plot = False
+diff_daily(data, plot)
+order_freq(data, plot)
 best_and_worst(data)
 freq_sell(data)
 positives_and_negatives(data)
 buy_same_followed(data)
 coin_quality(data)
+streak_pattern(data)

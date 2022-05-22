@@ -214,6 +214,12 @@ class StrategyRelative(StrategyDefault):
             self.descripton = None
 
     def best(self, index: int = 0):
+        """_range = [0.98, 1.05] # %
+        btc = Coin.get('BTC') 
+        diff = ((btc.price/btc.historic[-self.trend_time])-1)*100
+        if (diff < _range[0]) or (diff > _range[1]):
+            return None
+        """
         potentials = []
         best = None
         for coin in Coin.get_tradebles():
