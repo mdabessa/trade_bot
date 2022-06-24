@@ -6,8 +6,9 @@ from dhooks import File, Webhook
 
 
 class Logger:
-    def __init__(self, fname: str = "../logs/log.txt") -> None:
+    def __init__(self, fname: str = "../logs/log.txt", _print: bool = True) -> None:
         self.fname = fname
+        self._print = _print
         if self.fname:
             directory = os.path.dirname(fname)
             if not os.path.exists(directory):
@@ -16,14 +17,15 @@ class Logger:
                 except:
                     pass
 
-        try:
-            os.remove(self.fname)
-        except:
-            pass
+            try:
+                os.remove(self.fname)
+            except:
+                pass
 
     def log(self, info: str) -> None:
-        info = str(info)
-        print(info + "\n")
+        if self._print:
+            info = str(info)
+            print(info + "\n")
         if self.fname:
             with open(self.fname, "a") as f:
                 f.write(info + "\n\n")
