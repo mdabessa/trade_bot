@@ -241,7 +241,8 @@ def streak_pattern(data):
     total_med["neg"] = sum(total_med["neg"]) / len(total_med["neg"])
     print(total_med)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     data = summary("./backtest/default.json")
 
     plot = True
@@ -252,4 +253,4 @@ if __name__ == '__main__':
     positives_and_negatives(data)
     buy_same_followed(data)
     coin_quality(data)
-    #streak_pattern(data)
+    # streak_pattern(data)

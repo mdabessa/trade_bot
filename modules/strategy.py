@@ -70,7 +70,6 @@ class StrategyDefault(Strategy):
                     self.manager.att_price()
                     sleep(delay)
 
-
         else:
             usdt = self.manager.get_balance("USDT")
             self.manager.logger(self.descripton)
@@ -215,7 +214,7 @@ class StrategyRelative(StrategyDefault):
 
     def best(self, index: int = 0):
         """_range = [0.98, 1.05] # %
-        btc = Coin.get('BTC') 
+        btc = Coin.get('BTC')
         diff = ((btc.price/btc.historic[-self.trend_time])-1)*100
         if (diff < _range[0]) or (diff > _range[1]):
             return None
@@ -281,4 +280,3 @@ class StrategyTrend(StrategyDefault):
 
     def stop_lose(self) -> None:
         ...
-
