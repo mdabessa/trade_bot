@@ -1,5 +1,8 @@
 import traceback
 
+from http.client import RemoteDisconnected
+import time
+
 from modules.config import (
     API_KEY,
     API_SECRET,
@@ -39,14 +42,33 @@ manager = ManagerBinance(
 strategy = Strategy(manager, configs)
 
 if __name__ == "__main__":
-    try:
-        strategy.run(delay=60)
-    except Exception as e:
-        if ("Connection reset by peer" in str(e)) or ("Read timed out." in str(e)):
-            logger("Connection reset by peer or Read timed out.")
+    last_error = 0
+    while True:
+        try:
+            strategy.run(delay=60)
 
-        else:
-            logger(str(e), mention_id=DISCORD_USER_ID_MENTION)
-            t = str(traceback.format_exc())
-            logger(t, file=True)
-            scout = Header.create_update("scout", "1", type_="bool")
+        except Exception as e:
+            if isinstance(e, RemoteDisconnected):
+                logger("Connection reset by peer or Read timed out.")
+
+            else:
+                logger(str(e), mention_id=DISCORD_USER_ID_MENTION)
+                t = str(traceback.format_exc())
+                logger(t, file=True)
+                scout = Header.create_update("scout", "1", type_="bool")
+
+        finally:
+            delta = time.time() - last_error
+            
+            # Recurrent error
+            if delta < 120: 
+                scout = Header.get('scout')
+
+                if scout:
+                    logger('The bot crashed twice in less than 2 minutes, even in scout mode. Turning off...')
+                    break
+                
+                else:
+                    scout.set(1)
+
+            last_error = time.time()
